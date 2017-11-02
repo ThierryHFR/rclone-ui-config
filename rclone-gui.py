@@ -28,16 +28,31 @@ class ComboBoxWindow(Gtk.Window):
     def on_new_remote(self, button):
         opts = []
         exe = ''
+        msg = ''
         for obj in self.listOptionsObj:
             if obj.get_text_length():
                 opts.append(obj.get_name())
                 opts.append(obj.get_text())
+        remoteName = '%s%d' % (self.providerName, time.time())
         if len(opts):        
-            exe = 'rclone config create ', self.providerName, str(time.time()), ' ', self.providerName, ' '.join(opts)
+            exe = 'rclone config create ', remoteName, ' ', self.providerName, ' '.join(opts)
         else:      
-            exe = 'rclone config create %s%d %s' % (self.providerName, time.time(), self.providerName)
-        subprocess.check_output(exe.split(' '))        
-
+            exe = 'rclone config create %s %s' % (remoteName, self.providerName)
+        try:
+            py2code = subprocess.check_call(exe.split(' '))
+            print('py2 said:', py2code)
+            if py2code  == 0:
+                self.storeRemote.append([str(remoteName), str(self.providerName)])
+                msg = 'Your remote has been successfully configured...'
+            else:
+                msg = 'Failed to configure your remote...'
+            print("INFO dialog closed")
+        except subprocess.CalledProcessError as e:
+            msg = 'Failed to configure your remote...'
+        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, msg)
+        dialog.run()
+        dialog.destroy()
+			
     def populate(self, name):
         for opt in self.listOptions:
             opt.hide()
@@ -97,11 +112,13 @@ class ComboBoxWindow(Gtk.Window):
         name_combo.set_entry_text_column(1)
         return name_combo
 
-    def __init__(self):
+    def update_remotes_list(self):
         s = subprocess.check_output(['rclone' ,'config', 'dump'])
         output = s.decode("utf-8")
         self.jsonRemotes = json.loads(output)
-        
+
+    def __init__(self):
+        self.update_remotes_list()
         Gtk.Window.__init__(self, title="Confih Ui Rclone")
         self.listOptions = []
         self.set_default_size(600,480)
