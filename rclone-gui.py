@@ -25,6 +25,28 @@ class ComboBoxWindow(Gtk.Window):
         self.vbox.pack_start(frameNewRemote, False, False, 0)
         return vboxFrame
 
+    def on_delete_remote(self, button):
+        exe = ''
+        tree_iter = None
+        selection = self.tree.get_selection()
+        model, paths = selection.get_selected_rows()
+        for path in paths:
+            tree_iter = model.get_iter(path)
+        exe = model.get_value(tree_iter,0) 
+        print(exe)
+        try:
+            py2code = subprocess.check_call(['rclone', 'config', 'delete', exe])
+            if py2code  == 0:
+                model.remove(tree_iter)
+                msg = 'Your remote has been successfully removed...'
+            else:
+                msg = 'Failed to remove your remote...'
+        except subprocess.CalledProcessError as e:
+            msg = 'Failed to remove your remote...'
+        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, msg)
+        dialog.run()
+        dialog.destroy()
+
     def on_new_remote(self, button):
         opts = []
         exe = ''
@@ -52,7 +74,7 @@ class ComboBoxWindow(Gtk.Window):
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, msg)
         dialog.run()
         dialog.destroy()
-			
+
     def populate(self, name):
         for opt in self.listOptions:
             opt.hide()
@@ -151,7 +173,8 @@ class ComboBoxWindow(Gtk.Window):
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.frameModifyBox.pack_start(hbox, False, False, 0)
         hbox.show()
-        button = Gtk.Button()
+        button = Gtk.Button.new_with_label("Delete remote")
+        button.connect("clicked", self.on_delete_remote)
         hbox.pack_start(button, False, False, 0)
         button = Gtk.Button()
         hbox.pack_start(button, False, False, 0)
