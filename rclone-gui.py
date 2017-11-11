@@ -151,9 +151,23 @@ class ComboBoxWindow(Gtk.Window):
         self.remote()
         self.frameNewBox = self.frameBoxVertical('New remote')
         self.frameNewBox.show()
-        name_combo = self.boxProviders()
-        self.frameNewBox.pack_start(name_combo, False, False, 0)
+        self.name_combo = self.boxProviders()
+        self.frameNewBox.pack_start(self.name_combo, False, False, 0)
         self.add(self.vbox)
+
+    def on_list_remote_changed(self, tree_selection):
+        type_remote = ''
+        (model, pathlist) = tree_selection.get_selected_rows()
+        for path in pathlist :
+             tree_iter = model.get_iter(path)
+             type_remote = model.get_value(tree_iter,1)
+        item = self.providers_store.get_iter_first ()
+        model = self.name_combo.get_model()
+        while ( item != None ):
+             if type_remote == model.get_value(item, 1):
+                 self.name_combo.set_active_iter(item)
+                 return
+             item = self.providers_store.iter_next(item)
 
     def remote(self):
         self.storeRemote = Gtk.ListStore(str, str)
@@ -162,6 +176,9 @@ class ComboBoxWindow(Gtk.Window):
         for value in self.jsonRemotes:
             self.storeRemote.append([str(value), str(self.jsonRemotes[value]['type'])])
         self.tree = Gtk.TreeView(self.storeRemote)
+        self.tree.props.activate_on_single_click = True
+        self.tree_selection = self.tree.get_selection()
+        self.tree_selection.connect("changed", self.on_list_remote_changed)
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn('Remote Name', renderer, text=0)
         self.tree.append_column(column)
