@@ -76,12 +76,15 @@ class ComboBoxWindow(Gtk.Window):
         dialog.destroy()
 
     def populate(self, name):
+        jsonRemotes = None
         for opt in self.listOptions:
             opt.hide()
             self.vbox.remove(opt)
 
         self.listOptions = []
         self.listOptionsObj = []
+        if self.jsonRemotes and self.name_remote != '':
+            jsonRemotes = self.jsonRemotes[self.name_remote]
         self.providerName = name
 
         for value in self.jsonProviders:
@@ -98,6 +101,8 @@ class ComboBoxWindow(Gtk.Window):
                     entry = Gtk.Entry()
                     entry.show()
                     entry.set_name(opts.Name)
+                    if jsonRemotes and opts.Name in jsonRemotes:
+                        entry.set_text(jsonRemotes[opts.Name])
                     hbox.pack_start(entry, False, False, 0)
                     self.listOptionsObj.append(entry)
                     self.frameNewBox.pack_start(hbox, False, False, 0)
@@ -110,6 +115,7 @@ class ComboBoxWindow(Gtk.Window):
                 hbox.pack_start(button, False, False, 0)
                 button.show()
                 self.frameNewBox.pack_start(hbox, False, False, 0)
+        self.name_remote = ''
 
 
     def on_name_combo_changed(self, combo):
@@ -143,6 +149,7 @@ class ComboBoxWindow(Gtk.Window):
         self.update_remotes_list()
         Gtk.Window.__init__(self, title="Confih Ui Rclone")
         self.listOptions = []
+        self.name_remote = ''
         self.set_default_size(600,480)
         self.resize(600,480)
         self.set_border_width(10)
@@ -156,16 +163,19 @@ class ComboBoxWindow(Gtk.Window):
         self.add(self.vbox)
 
     def on_list_remote_changed(self, tree_selection):
+        self.name_remote = ''
         type_remote = ''
         (model, pathlist) = tree_selection.get_selected_rows()
         for path in pathlist :
              tree_iter = model.get_iter(path)
+             self.name_remote = model.get_value(tree_iter,0)
              type_remote = model.get_value(tree_iter,1)
         item = self.providers_store.get_iter_first ()
         model = self.name_combo.get_model()
         while ( item != None ):
              if type_remote == model.get_value(item, 1):
                  self.name_combo.set_active_iter(item)
+                 self.update_remotes_list()
                  return
              item = self.providers_store.iter_next(item)
 
