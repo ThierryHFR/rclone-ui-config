@@ -2,5 +2,6 @@
 GUI for rclone
 
 Configuration interface for rclone:
-- configure a cloud
-- delete a cloud
+- configure a remote
+- delete a remote
+- update a remote
