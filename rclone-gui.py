@@ -57,10 +57,11 @@ class ComboBoxWindow(Gtk.Window):
                 opts.append(obj.get_text())
         remoteName = '%s%d' % (self.providerName, time.time())
         if len(opts):        
-            exe = 'rclone config create ', remoteName, ' ', self.providerName, ' '.join(opts)
+            exe = 'rclone config create %s %s %s' % (remoteName, self.providerName, ' '.join(opts))
         else:      
             exe = 'rclone config create %s %s' % (remoteName, self.providerName)
         try:
+            print('py2 exe: ', exe)
             py2code = subprocess.check_call(exe.split(' '))
             print('py2 said:', py2code)
             if py2code  == 0:
