@@ -76,15 +76,47 @@ class ComboBoxWindow(Gtk.Window):
         dialog.run()
         dialog.destroy()
 
+    def on_update_remote(self, button):
+        opts = []
+        exe = ''
+        msg = ''
+        for obj in self.listOptionsObj:
+            if obj.get_text_length():
+                opts.append(obj.get_name())
+                opts.append(obj.get_text())
+        if len(opts):
+            exe = 'rclone config update %s %s' % (self.remoteName, ' '.join(opts))
+        else:
+            dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, "All fields are empty.")
+            dialog.run()
+            dialog.destroy()
+            return
+        try:
+            print('py2 exe: ', exe)
+            py2code = subprocess.check_call(exe.split(' '))
+            print('py2 said:', py2code)
+            if py2code  == 0:
+                msg = 'Your remote has been successfully configured...'
+            else:
+                msg = 'Failed to configure your remote...'
+            print("INFO dialog closed")
+        except subprocess.CalledProcessError as e:
+            msg = 'Failed to configure your remote...'
+        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, msg)
+        dialog.run()
+        dialog.destroy()
+        self.remoteName = ''
+
     def populate(self, name):
         jsonRemotes = None
+        self.remoteName = ''
         for opt in self.listOptions:
             opt.hide()
             self.vbox.remove(opt)
 
         self.listOptions = []
         self.listOptionsObj = []
-        if self.jsonRemotes and self.name_remote != '':
+        if self.name_remote != None and self.name_remote in self.jsonRemotes:
             jsonRemotes = self.jsonRemotes[self.name_remote]
         self.providerName = name
 
@@ -102,7 +134,10 @@ class ComboBoxWindow(Gtk.Window):
                     entry = Gtk.Entry()
                     entry.show()
                     entry.set_name(opts.Name)
-                    if jsonRemotes and opts.Name in jsonRemotes:
+                    if opts.Name.startswith('pass'):
+                        entry.set_visibility(False)
+                        entry.set_invisible_char("*")
+                    elif jsonRemotes != None and opts.Name in jsonRemotes:
                         entry.set_text(jsonRemotes[opts.Name])
                     hbox.pack_start(entry, False, False, 0)
                     self.listOptionsObj.append(entry)
@@ -111,8 +146,14 @@ class ComboBoxWindow(Gtk.Window):
                 hbox.set_homogeneous(False)
                 hbox.show()
                 self.listOptions.append(hbox)
-                button = Gtk.Button.new_with_label("Create new remote")
-                button.connect("clicked", self.on_new_remote)
+                button = None
+                if self.name_remote != '':
+                    button = Gtk.Button.new_with_label("Update remote")
+                    button.connect("clicked", self.on_update_remote)
+                    self.remoteName = self.name_remote
+                else:
+                    button = Gtk.Button.new_with_label("Create new remote")
+                    button.connect("clicked", self.on_new_remote)
                 hbox.pack_start(button, False, False, 0)
                 button.show()
                 self.frameNewBox.pack_start(hbox, False, False, 0)
