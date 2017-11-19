@@ -50,28 +50,35 @@ class ComboBoxWindow(Gtk.Window):
     def on_new_remote(self, button):
         opts = []
         exe = ''
+        passExe = ''
         msg = ''
+        passName = ''
+        passValue = ''
         for obj in self.listOptionsObj:
             if obj.get_text_length():
-                opts.append(obj.get_name())
-                opts.append(obj.get_text())
+                if obj.get_visibility():
+                    opts.append(obj.get_name())
+                    opts.append(obj.get_text())
+                else:
+                    passName = obj.get_name()
+                    passValue = obj.get_text()
         remoteName = '%s%d' % (self.providerName, time.time())
         if len(opts):        
             exe = 'rclone config create %s %s %s' % (remoteName, self.providerName, ' '.join(opts))
         else:      
             exe = 'rclone config create %s %s' % (remoteName, self.providerName)
         try:
-            print('py2 exe: ', exe)
             py2code = subprocess.check_call(exe.split(' '))
-            print('py2 said:', py2code)
             if py2code  == 0:
-                self.storeRemote.append([str(remoteName), str(self.providerName)])
-                msg = 'Your remote has been successfully configured...'
+                  passExe = 'rclone config password %s %s %s' % (remoteName, passName, passValue)
+                  subprocess.check_call(passExe.split(' '))
+                  msg = 'Your remote has been successfully configured...'
+                  self.storeRemote.append([str(remoteName), str(self.providerName)])
             else:
-                msg = 'Failed to configure your remote...'
-            print("INFO dialog closed")
+                   msg = 'Failed to configure your remote...'
         except subprocess.CalledProcessError as e:
             msg = 'Failed to configure your remote...'
+        
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, msg)
         dialog.run()
         dialog.destroy()
@@ -80,10 +87,17 @@ class ComboBoxWindow(Gtk.Window):
         opts = []
         exe = ''
         msg = ''
+        passExe = ''
+        passName = ''
+        passValue = ''
         for obj in self.listOptionsObj:
             if obj.get_text_length():
-                opts.append(obj.get_name())
-                opts.append(obj.get_text())
+                if obj.get_visibility():
+                    opts.append(obj.get_name())
+                    opts.append(obj.get_text())
+                else:
+                    passName = obj.get_name()
+                    passValue = obj.get_text()
         if len(opts):
             exe = 'rclone config update %s %s' % (self.remoteName, ' '.join(opts))
         else:
@@ -96,12 +110,15 @@ class ComboBoxWindow(Gtk.Window):
             py2code = subprocess.check_call(exe.split(' '))
             print('py2 said:', py2code)
             if py2code  == 0:
+                if passValue != '':
+                     passExe = 'rclone config password %s %s %s' % (remoteName, passName, passValue)
+                     subprocess.check_call(passExe.split(' '))
                 msg = 'Your remote has been successfully configured...'
             else:
-                msg = 'Failed to configure your remote...'
-            print("INFO dialog closed")
+                 msg = 'Failed to configure your remote...'
         except subprocess.CalledProcessError as e:
             msg = 'Failed to configure your remote...'
+            
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, msg)
         dialog.run()
         dialog.destroy()
@@ -134,7 +151,8 @@ class ComboBoxWindow(Gtk.Window):
                     entry = Gtk.Entry()
                     entry.show()
                     entry.set_name(opts.Name)
-                    if opts.Name.startswith('pass'):
+                    print('Azerty : ', opts.IsPassword)
+                    if opts.IsPassword:
                         entry.set_visibility(False)
                         entry.set_invisible_char("*")
                     elif jsonRemotes != None and opts.Name in jsonRemotes:
